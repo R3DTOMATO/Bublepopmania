@@ -66,6 +66,16 @@ body {
     font-weight: 600;
 }
 
+#sound-toggle {
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.3s ease;
+}
+
+#sound-toggle:hover {
+    transform: scale(1.1);
+}
+
 #combo-meter {
     position: absolute;
     top: 60px;
@@ -354,6 +364,7 @@ body {
 <div id="score-display">
 <div id="score">점수: 0</div>
 <div id="time">시간: 60</div>
+<div id="sound-toggle">🔊</div>
 </div>
 <div id="timer-bar"></div>
 <div id="game-container"></div>
@@ -386,6 +397,7 @@ body {
     <p>3. 콤보를 이어가면 추가 점수를 얻을 수 있습니다.</p>
     <p>4. 버블을 터뜨릴 때마다 시간이 조금씩 추가됩니다.</p>
     <p>5. 시간이 다 되면 게임이 종료됩니다.</p>
+    <p>6. 우측 상단의 🔊 버튼으로 소리를 켜거나 끌 수 있습니다.</p>
 </div>
 <button class="back-btn">뒤로 가기</button>
 </div>
@@ -434,6 +446,7 @@ let timeLeft = 30;
 let gameActive = false;
 let difficulty = 'easy';
 let bubbleVelocities = [];
+let soundEnabled = true;
 let highScores = [
     { rank: 1, score: 10000 },
     { rank: 2, score: 8500 },
@@ -441,6 +454,14 @@ let highScores = [
     { rank: 4, score: 6100 },
     { rank: 5, score: 5000 }
 ];
+
+// 오디오 요소 생성
+const popSound = new Audio('/audio/pop.mp3');
+const comboSound = new Audio('');
+const gameStartSound = new Audio('/audio/pop-beat.mp3');
+const gameOverSound = new Audio('/audio/pop-beat.mp3');
+const buttonClickSound = new Audio('/audio/pop.mp3');
+const timeAddedSound = new Audio('');
 
 // 게임 요소
 const gameContainer = document.getElementById('game-container');
@@ -462,6 +483,7 @@ const playBtn = document.getElementById('play-btn');
 const howToBtn = document.getElementById('how-to-btn');
 const rankingBtn = document.getElementById('ranking-btn');
 const backBtns = document.querySelectorAll('.back-btn');
+const soundToggle = document.getElementById('sound-toggle');
 
 // 편안한 파스텔 색상 배열
 const colors = [
@@ -504,18 +526,31 @@ levelBtns.forEach(btn => {
         levelBtns.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         difficulty = btn.dataset.level;
+        if (soundEnabled) buttonClickSound.play();
     });
+});
+
+// 사운드 토글
+soundToggle.addEventListener('click', () => {
+    soundEnabled = !soundEnabled;
+    soundToggle.textContent = soundEnabled ? '🔊' : '🔈';
+    
+    if (soundEnabled) {
+        buttonClickSound.play();
+    }
 });
 
 // 메인 메뉴 네비게이션
 playBtn.addEventListener('click', () => {
     mainMenu.style.display = 'none';
     startScreen.style.display = 'flex';
+    if (soundEnabled) buttonClickSound.play();
 });
 
 howToBtn.addEventListener('click', () => {
     mainMenu.style.display = 'none';
     howToScreen.style.display = 'flex';
+    if (soundEnabled) buttonClickSound.play();
 });
 
 rankingBtn.addEventListener('click', () => {
@@ -523,6 +558,7 @@ rankingBtn.addEventListener('click', () => {
     rankingScreen.style.display = 'flex';
     // 랭킹 화면 업데이트
     updateHighScores();
+    if (soundEnabled) buttonClickSound.play();
 });
 
 // 뒤로 가기 버튼
@@ -532,6 +568,7 @@ backBtns.forEach(btn => {
         howToScreen.style.display = 'none';
         rankingScreen.style.display = 'none';
         mainMenu.style.display = 'flex';
+        if (soundEnabled) buttonClickSound.play();
     });
 });
 
@@ -539,11 +576,16 @@ backBtns.forEach(btn => {
 selectLevelBtn.addEventListener('click', () => {
     gameOverScreen.style.display = 'none';
     startScreen.style.display = 'flex';
+    if (soundEnabled) buttonClickSound.play();
 });
 
 // 게임 시작
-startBtn.addEventListener('click', startGame);
+startBtn.addEventListener('click', () => {
+    if (soundEnabled) buttonClickSound.play();
+    startGame();
+});
 restartBtn.addEventListener('click', () => {
+    if (soundEnabled) buttonClickSound.play();
     gameOverScreen.style.display = 'none';
     startGame();
 });
@@ -564,6 +606,12 @@ function startGame() {
     // 시작 화면과 모든 메뉴 숨기기
     startScreen.style.display = 'none';
     mainMenu.style.display = 'none';
+    
+    // 시작 사운드 재생
+    if (soundEnabled) {
+        gameStartSound.currentTime = 0;
+        gameStartSound.play();
+    }
     
     // 버블 생성
     createBubbles();
@@ -688,6 +736,14 @@ function popBubble(bubble, index) {
     // 점수 추가
     const value = parseInt(bubble.dataset.value);
     addScore(value * 10);
+    
+    // 팝 사운드 재생
+    if (soundEnabled) {
+        // 여러 버블이 동시에 터질 때 사운드가 중첩되게 하기 위해 복제
+        const popSoundClone = popSound.cloneNode();
+        popSoundClone.volume = 0.7;
+        popSoundClone.play();
+    }
     
     // 팝 효과 추가
     const rect = bubble.getBoundingClientRect();
@@ -852,6 +908,12 @@ function increaseCombo() {
     comboMeter.textContent = `COMBO x${comboCount}`;
     comboMeter.style.opacity = '1';
     
+    // 콤보 사운드 재생 (2연속 이상일 때만)
+    if (comboCount > 1 && soundEnabled) {
+        comboSound.currentTime = 0;
+        comboSound.play();
+    }
+    
     // 콤보 타이머 설정
     comboTimer = setTimeout(() => {
         resetCombo();
@@ -895,11 +957,23 @@ function addTime(seconds) {
     // 타이머 바 업데이트
     const percentage = (timeLeft / difficultySettings[difficulty].timeLimit) * 100;
     timerBar.style.width = `${percentage}%`;
+    
+    // 시간 추가 사운드 (1초 이상 추가될 때만)
+    if (seconds >= 1 && soundEnabled) {
+        timeAddedSound.currentTime = 0;
+        timeAddedSound.play();
+    }
 }
 
 function endGame() {
     gameActive = false;
     clearInterval(gameTimer);
+    
+    // 게임 오버 사운드 재생
+    if (soundEnabled) {
+        gameOverSound.currentTime = 0;
+        gameOverSound.play();
+    }
     
     finalScoreDisplay.textContent = `최종 점수: ${score}`;
     gameOverScreen.style.display = 'flex';
