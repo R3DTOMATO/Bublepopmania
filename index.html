@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Bubble Pop Mania</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Nunito', 'Arial', sans-serif;
+    touch-action: manipulation;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background: linear-gradient(135deg, #799FB8, #D5E8F4);
+    color: #2E4B5A;
+}
+
+#game-container {
+    position: relative;
+    flex-grow: 1;
+    background: linear-gradient(to bottom, #E1F2FB, #B8D1E5);
+    overflow: hidden;
+    border-radius: 12px;
+    margin: 0 12px 12px 12px;
+    box-shadow: 0 8px 30px rgba(46, 75, 90, 0.1);
+}
+
+.bubble {
+    position: absolute;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    box-shadow: inset 0 0 10px rgba(255,255,255,0.5), 0 4px 8px rgba(0,0,0,0.1);
+    backdrop-filter: blur(5px);
+    text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    font-size: 16px;
+    transition: transform 0.2s ease;
+}
+
+.bubble:hover, .bubble:active {
+    transform: scale(1.05);
+}
+
+#score-display {
+    padding: 12px 16px;
+    background-color: rgba(255, 255, 255, 0.8);
+    color: #2E4B5A;
+    font-size: 18px;
+    text-align: center;
+    display: flex;
+    justify-content: space-between;
+    border-radius: 12px;
+    margin: 12px 12px 0 12px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 15px rgba(46, 75, 90, 0.08);
+    font-weight: 600;
+}
+
+#combo-meter {
+    position: absolute;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #2E4B5A;
+    font-size: 24px;
+    font-weight: bold;
+    background-color: rgba(255, 255, 255, 0.7);
+    padding: 8px 16px;
+    border-radius: 20px;
+    box-shadow: 0 4px 12px rgba(46, 75, 90, 0.15);
+    opacity: 0;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(5px);
+}
+
+#start-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(215, 232, 244, 0.95);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #2E4B5A;
+    z-index: 100;
+    backdrop-filter: blur(8px);
+}
+
+.start-btn {
+    background: linear-gradient(to right, #6889A0, #A7D2E5);
+    border: none;
+    color: white;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 18px;
+    margin: 20px;
+    cursor: pointer;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(46, 75, 90, 0.2);
+    transition: all 0.3s;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.start-btn:hover {
+    box-shadow: 0 10px 25px rgba(46, 75, 90, 0.25);
+    transform: translateY(-2px);
+}
+
+.level-select {
+    display: flex;
+    margin-bottom: 20px;
+    background-color: rgba(255, 255, 255, 0.5);
+    padding: 10px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(46, 75, 90, 0.08);
+}
+
+.level-btn {
+    background-color: rgba(255, 255, 255, 0.5);
+    border: none;
+    color: #2E4B5A;
+    padding: 10px 20px;
+    margin: 0 5px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+}
+
+.level-btn.active {
+    background: linear-gradient(to right, #6889A0, #A7D2E5);
+    color: white;
+    box-shadow: 0 4px 8px rgba(46, 75, 90, 0.15);
+}
+
+.level-btn:hover:not(.active) {
+    background-color: rgba(255, 255, 255, 0.8);
+}
+
+.pop-effect {
+    position: absolute;
+    pointer-events: none;
+    opacity: 0.8;
+    animation: pop 0.5s forwards;
+}
+
+@keyframes pop {
+    0% {
+        transform: scale(1);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(2.5);
+        opacity: 0;
+    }
+}
+
+.mini-explosion {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background-color: white;
+    border-radius: 50%;
+    pointer-events: none;
+    animation: explode 0.8s forwards;
+}
+
+@keyframes explode {
+    0% {
+        transform: scale(0);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(15);
+        opacity: 0;
+    }
+}
+
+#timer-bar {
+    height: 8px;
+    background: linear-gradient(to right, #A7D2E5, #6889A0);
+    width: 100%;
+    transition: width 0.1s linear;
+    border-radius: 0 0 8px 8px;
+    margin: 0 12px;
+    width: calc(100% - 24px);
+}
+
+#game-over {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(215, 232, 244, 0.9);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #2E4B5A;
+    z-index: 100;
+    backdrop-filter: blur(8px);
+}
+
+#game-over h1 {
+    font-size: 36px;
+    margin-bottom: 10px;
+}
+
+#final-score {
+    font-size: 24px;
+    margin-bottom: 20px;
+}
+
+/* 메인 메뉴 스타일 */
+#main-menu, #how-to-screen, #ranking-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #799FB8, #D5E8F4);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #2E4B5A;
+    z-index: 100;
+}
+
+.menu-btn {
+    background-color: rgba(255, 255, 255, 0.8);
+    border: none;
+    color: #2E4B5A;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: block;
+    width: 220px;
+    font-size: 18px;
+    margin: 10px;
+    cursor: pointer;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(46, 75, 90, 0.15);
+    transition: all 0.3s;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    backdrop-filter: blur(5px);
+}
+
+.menu-btn:hover {
+    background-color: white;
+    transform: scale(1.03);
+    box-shadow: 0 10px 25px rgba(46, 75, 90, 0.2);
+}
+
+#how-to-screen, #ranking-screen, #start-screen {
+    display: none;
+}
+
+.back-btn {
+    background-color: rgba(255, 255, 255, 0.7);
+    border: none;
+    color: #2E4B5A;
+    padding: 10px 24px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin-top: 20px;
+    cursor: pointer;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(46, 75, 90, 0.1);
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.back-btn:hover {
+    background-color: white;
+    box-shadow: 0 6px 15px rgba(46, 75, 90, 0.15);
+}
+
+.instructions {
+    max-width: 80%;
+    margin: 20px auto;
+    text-align: left;
+    line-height: 1.6;
+}
+
+.score-entry {
+    display: flex;
+    justify-content: space-between;
+    width: 80%;
+    max-width: 300px;
+    padding: 12px 16px;
+    margin: 8px 0;
+    background-color: rgba(255, 255, 255, 0.7);
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(46, 75, 90, 0.08);
+    transition: transform 0.2s ease;
+}
+
+.score-entry:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(46, 75, 90, 0.12);
+}
+
+.rank {
+    font-weight: 600;
+    color: #6889A0;
+}
+
+.select-level-btn {
+    background: linear-gradient(to right, #9DD3A8, #6BAA78);
+    border: none;
+    color: white;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 18px;
+    margin: 10px 20px;
+    cursor: pointer;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(46, 75, 90, 0.2);
+    transition: all 0.3s;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.select-level-btn:hover {
+    box-shadow: 0 10px 25px rgba(46, 75, 90, 0.25);
+    transform: translateY(-2px);
+}
+</style>
+</head>
+<body>
+<div id="score-display">
+<div id="score">점수: 0</div>
+<div id="time">시간: 60</div>
+</div>
+<div id="timer-bar"></div>
+<div id="game-container"></div>
+<div id="combo-meter">COMBO x1</div>
+
+<div id="main-menu">
+<h1>Bubble Pop Mania</h1>
+<button class="menu-btn" id="play-btn">게임 플레이</button>
+<button class="menu-btn" id="how-to-btn">게임 방법</button>
+<button class="menu-btn" id="ranking-btn">랭킹</button>
+</div>
+
+<div id="start-screen">
+<h1>Bubble Pop Mania</h1>
+<p>같은 색상의 방울을 연결하여 터뜨리세요!</p>
+<div class="level-select">
+    <button class="level-btn active" data-level="easy">쉬움</button>
+    <button class="level-btn" data-level="medium">보통</button>
+    <button class="level-btn" data-level="hard">어려움</button>
+</div>
+<button class="start-btn">게임 시작</button>
+<button class="back-btn">뒤로 가기</button>
+</div>
+
+<div id="how-to-screen">
+<h1>게임 방법</h1>
+<div class="instructions">
+    <p>1. 화면에 떠다니는 버블을 터치하여 터뜨리세요.</p>
+    <p>2. 같은 색상의 버블이 가까이 있으면 함께 터집니다.</p>
+    <p>3. 콤보를 이어가면 추가 점수를 얻을 수 있습니다.</p>
+    <p>4. 버블을 터뜨릴 때마다 시간이 조금씩 추가됩니다.</p>
+    <p>5. 시간이 다 되면 게임이 종료됩니다.</p>
+</div>
+<button class="back-btn">뒤로 가기</button>
+</div>
+
+<div id="ranking-screen">
+<h1>최고 점수</h1>
+<div id="high-scores">
+    <div class="score-entry">
+        <div class="rank">1</div>
+        <div class="score">10000</div>
+    </div>
+    <div class="score-entry">
+        <div class="rank">2</div>
+        <div class="score">8500</div>
+    </div>
+    <div class="score-entry">
+        <div class="rank">3</div>
+        <div class="score">7200</div>
+    </div>
+    <div class="score-entry">
+        <div class="rank">4</div>
+        <div class="score">6100</div>
+    </div>
+    <div class="score-entry">
+        <div class="rank">5</div>
+        <div class="score">5000</div>
+    </div>
+</div>
+<button class="back-btn">뒤로 가기</button>
+</div>
+
+<div id="game-over">
+<h1>게임 종료!</h1>
+<div id="final-score">최종 점수: 0</div>
+<button class="start-btn" id="restart-btn">다시 시작</button>
+<button class="select-level-btn" id="select-level-btn">난이도 선택</button>
+</div>
+
+<script>
+// 게임 변수
+let score = 0;
+let comboCount = 0;
+let comboTimer = null;
+let gameTimer = null;
+let timeLeft = 30;
+let gameActive = false;
+let difficulty = 'easy';
+let bubbleVelocities = [];
+let highScores = [
+    { rank: 1, score: 10000 },
+    { rank: 2, score: 8500 },
+    { rank: 3, score: 7200 },
+    { rank: 4, score: 6100 },
+    { rank: 5, score: 5000 }
+];
+
+// 게임 요소
+const gameContainer = document.getElementById('game-container');
+const scoreDisplay = document.getElementById('score');
+const timeDisplay = document.getElementById('time');
+const comboMeter = document.getElementById('combo-meter');
+const mainMenu = document.getElementById('main-menu');
+const startScreen = document.getElementById('start-screen');
+const howToScreen = document.getElementById('how-to-screen');
+const rankingScreen = document.getElementById('ranking-screen');
+const gameOverScreen = document.getElementById('game-over');
+const finalScoreDisplay = document.getElementById('final-score');
+const timerBar = document.getElementById('timer-bar');
+const startBtn = document.querySelector('.start-btn');
+const restartBtn = document.getElementById('restart-btn');
+const selectLevelBtn = document.getElementById('select-level-btn');
+const levelBtns = document.querySelectorAll('.level-btn');
+const playBtn = document.getElementById('play-btn');
+const howToBtn = document.getElementById('how-to-btn');
+const rankingBtn = document.getElementById('ranking-btn');
+const backBtns = document.querySelectorAll('.back-btn');
+
+// 편안한 파스텔 색상 배열
+const colors = [
+    {bg: '#97C1D9', text: '#FFFFFF'}, // 파스텔 블루
+    {bg: '#9DD3A8', text: '#FFFFFF'}, // 파스텔 그린
+    {bg: '#E6B0AA', text: '#FFFFFF'}, // 파스텔 핑크
+    {bg: '#F5CBA7', text: '#FFFFFF'}, // 파스텔 오렌지
+    {bg: '#D2B4DE', text: '#FFFFFF'}, // 파스텔 라벤더
+    {bg: '#AED6F1', text: '#FFFFFF'}  // 파스텔 스카이블루
+];
+
+// 난이도 설정
+const difficultySettings = {
+    easy: {
+        bubbleCount: 10,
+        minSize: 50,
+        maxSize: 70,
+        speed: 1,
+        timeLimit: 30
+    },
+    medium: {
+        bubbleCount: 15,
+        minSize: 40,
+        maxSize: 60,
+        speed: 1.5,
+        timeLimit: 30
+    },
+    hard: {
+        bubbleCount: 20,
+        minSize: 30,
+        maxSize: 50,
+        speed: 2,
+        timeLimit: 30
+    }
+};
+
+// 레벨 선택
+levelBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+        levelBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        difficulty = btn.dataset.level;
+    });
+});
+
+// 메인 메뉴 네비게이션
+playBtn.addEventListener('click', () => {
+    mainMenu.style.display = 'none';
+    startScreen.style.display = 'flex';
+});
+
+howToBtn.addEventListener('click', () => {
+    mainMenu.style.display = 'none';
+    howToScreen.style.display = 'flex';
+});
+
+rankingBtn.addEventListener('click', () => {
+    mainMenu.style.display = 'none';
+    rankingScreen.style.display = 'flex';
+    // 랭킹 화면 업데이트
+    updateHighScores();
+});
+
+// 뒤로 가기 버튼
+backBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+        startScreen.style.display = 'none';
+        howToScreen.style.display = 'none';
+        rankingScreen.style.display = 'none';
+        mainMenu.style.display = 'flex';
+    });
+});
+
+// 난이도 선택 버튼
+selectLevelBtn.addEventListener('click', () => {
+    gameOverScreen.style.display = 'none';
+    startScreen.style.display = 'flex';
+});
+
+// 게임 시작
+startBtn.addEventListener('click', startGame);
+restartBtn.addEventListener('click', () => {
+    gameOverScreen.style.display = 'none';
+    startGame();
+});
+
+function startGame() {
+    // 게임 상태 초기화
+    score = 0;
+    comboCount = 0;
+    scoreDisplay.textContent = '점수: 0';
+    gameContainer.innerHTML = '';
+    bubbleVelocities = [];
+    
+    // 난이도에 따른 시간 설정
+    timeLeft = difficultySettings[difficulty].timeLimit;
+    timeDisplay.textContent = `시간: ${timeLeft}`;
+    timerBar.style.width = '100%';
+    
+    // 시작 화면과 모든 메뉴 숨기기
+    startScreen.style.display = 'none';
+    mainMenu.style.display = 'none';
+    
+    // 버블 생성
+    createBubbles();
+    
+    // 타이머 시작
+    gameActive = true;
+    startTimer();
+    
+    // 애니메이션 시작
+    window.requestAnimationFrame(moveBubbles);
+}
+
+function createBubbles() {
+    const bubbleCount = difficultySettings[difficulty].bubbleCount;
+    const minSize = difficultySettings[difficulty].minSize;
+    const maxSize = difficultySettings[difficulty].maxSize;
+    const speed = difficultySettings[difficulty].speed;
+    
+    for (let i = 0; i < bubbleCount; i++) {
+        const size = Math.floor(Math.random() * (maxSize - minSize + 1)) + minSize;
+        const colorIndex = Math.floor(Math.random() * colors.length);
+        const value = Math.floor(Math.random() * 10) + 1;
+        
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble';
+        bubble.style.width = `${size}px`;
+        bubble.style.height = `${size}px`;
+        bubble.style.backgroundColor = colors[colorIndex].bg;
+        bubble.style.color = colors[colorIndex].text;
+        bubble.dataset.value = value;
+        bubble.dataset.color = colorIndex;
+        bubble.textContent = value;
+        
+        // 버블 위치 설정
+        const maxX = gameContainer.clientWidth - size;
+        const maxY = gameContainer.clientHeight - size;
+        bubble.style.left = `${Math.floor(Math.random() * maxX)}px`;
+        bubble.style.top = `${Math.floor(Math.random() * maxY)}px`;
+        
+        // 버블 속도 설정
+        bubbleVelocities.push({
+            x: (Math.random() * 2 - 1) * speed,
+            y: (Math.random() * 2 - 1) * speed
+        });
+        
+        // 클릭 이벤트 추가
+        bubble.addEventListener('click', () => {
+            if (!gameActive) return;
+            
+            popBubble(bubble, i);
+            
+            // 같은 색상의 근처 버블 찾기
+            const nearbyBubbles = findNearbySimilarBubbles(bubble);
+            
+            if (nearbyBubbles.length > 0) {
+                // 콤보 증가
+                increaseCombo();
+                
+                // 연결된 버블 터트리기
+                nearbyBubbles.forEach(nearBubble => {
+                    const index = Array.from(gameContainer.children).indexOf(nearBubble);
+                    popBubble(nearBubble, index);
+                });
+                
+                // 콤보 보너스 점수
+                const comboBonus = Math.pow(comboCount, 2) * 10;
+                addScore(comboBonus);
+            } else {
+                // 콤보 리셋
+                resetCombo();
+            }
+            
+            // 새 버블 생성
+            setTimeout(() => {
+                if (gameActive) {
+                    replaceBubble(i);
+                }
+            }, 500);
+        });
+        
+        gameContainer.appendChild(bubble);
+    }
+}
+
+function moveBubbles() {
+    if (!gameActive) return;
+    
+    const bubbles = document.querySelectorAll('.bubble');
+    const containerWidth = gameContainer.clientWidth;
+    const containerHeight = gameContainer.clientHeight;
+    
+    bubbles.forEach((bubble, index) => {
+        const rect = bubble.getBoundingClientRect();
+        const bubbleWidth = rect.width;
+        const bubbleHeight = rect.height;
+        
+        let x = parseFloat(bubble.style.left);
+        let y = parseFloat(bubble.style.top);
+        
+        x += bubbleVelocities[index].x;
+        y += bubbleVelocities[index].y;
+        
+        // 경계 검사
+        if (x <= 0 || x >= containerWidth - bubbleWidth) {
+            bubbleVelocities[index].x *= -1;
+            x = Math.max(0, Math.min(x, containerWidth - bubbleWidth));
+        }
+        
+        if (y <= 0 || y >= containerHeight - bubbleHeight) {
+            bubbleVelocities[index].y *= -1;
+            y = Math.max(0, Math.min(y, containerHeight - bubbleHeight));
+        }
+        
+        bubble.style.left = `${x}px`;
+        bubble.style.top = `${y}px`;
+    });
+    
+    window.requestAnimationFrame(moveBubbles);
+}
+
+function popBubble(bubble, index) {
+    // 점수 추가
+    const value = parseInt(bubble.dataset.value);
+    addScore(value * 10);
+    
+    // 팝 효과 추가
+    const rect = bubble.getBoundingClientRect();
+    const effect = document.createElement('div');
+    effect.className = 'pop-effect';
+    effect.style.width = `${rect.width}px`;
+    effect.style.height = `${rect.height}px`;
+    effect.style.left = bubble.style.left;
+    effect.style.top = bubble.style.top;
+    effect.style.backgroundColor = bubble.style.backgroundColor;
+    effect.style.opacity = '0.5';
+    gameContainer.appendChild(effect);
+    
+    // 미니 폭발 효과
+    for (let i = 0; i < 8; i++) {
+        const miniExplosion = document.createElement('div');
+        miniExplosion.className = 'mini-explosion';
+        miniExplosion.style.left = `${parseFloat(bubble.style.left) + rect.width / 2}px`;
+        miniExplosion.style.top = `${parseFloat(bubble.style.top) + rect.height / 2}px`;
+        miniExplosion.style.backgroundColor = bubble.style.backgroundColor;
+        gameContainer.appendChild(miniExplosion);
+        
+        setTimeout(() => {
+            if (miniExplosion.parentNode) {
+                miniExplosion.parentNode.removeChild(miniExplosion);
+            }
+        }, 800);
+    }
+    
+    // 버블 제거
+    bubble.parentNode.removeChild(bubble);
+    
+    // 타이머에 시간 추가
+    addTime(value * 0.2);
+    
+    // 효과 제거
+    setTimeout(() => {
+        if (effect.parentNode) {
+            effect.parentNode.removeChild(effect);
+        }
+    }, 500);
+}
+
+function replaceBubble(index) {
+    const minSize = difficultySettings[difficulty].minSize;
+    const maxSize = difficultySettings[difficulty].maxSize;
+    const speed = difficultySettings[difficulty].speed;
+    
+    const size = Math.floor(Math.random() * (maxSize - minSize + 1)) + minSize;
+    const colorIndex = Math.floor(Math.random() * colors.length);
+    const value = Math.floor(Math.random() * 10) + 1;
+    
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.style.width = `${size}px`;
+    bubble.style.height = `${size}px`;
+    bubble.style.backgroundColor = colors[colorIndex].bg;
+    bubble.style.color = colors[colorIndex].text;
+    bubble.dataset.value = value;
+    bubble.dataset.color = colorIndex;
+    bubble.textContent = value;
+    
+    // 화면 바깥에서 시작
+    const side = Math.floor(Math.random() * 4); // 0: 위, 1: 오른쪽, 2: 아래, 3: 왼쪽
+    const containerWidth = gameContainer.clientWidth;
+    const containerHeight = gameContainer.clientHeight;
+    
+    if (side === 0) {
+        bubble.style.left = `${Math.floor(Math.random() * containerWidth)}px`;
+        bubble.style.top = `-${size}px`;
+    } else if (side === 1) {
+        bubble.style.left = `${containerWidth}px`;
+        bubble.style.top = `${Math.floor(Math.random() * containerHeight)}px`;
+    } else if (side === 2) {
+        bubble.style.left = `${Math.floor(Math.random() * containerWidth)}px`;
+        bubble.style.top = `${containerHeight}px`;
+    } else {
+        bubble.style.left = `-${size}px`;
+        bubble.style.top = `${Math.floor(Math.random() * containerHeight)}px`;
+    }
+    
+    // 버블 속도 업데이트
+    bubbleVelocities[index] = {
+        x: (Math.random() * 2 - 1) * speed,
+        y: (Math.random() * 2 - 1) * speed
+    };
+    
+    // 클릭 이벤트 추가
+    bubble.addEventListener('click', () => {
+        if (!gameActive) return;
+        
+        popBubble(bubble, index);
+        
+        // 같은 색상의 근처 버블 찾기
+        const nearbyBubbles = findNearbySimilarBubbles(bubble);
+        
+        if (nearbyBubbles.length > 0) {
+            // 콤보 증가
+            increaseCombo();
+            
+            // 연결된 버블 터트리기
+            nearbyBubbles.forEach(nearBubble => {
+                const index = Array.from(gameContainer.children).indexOf(nearBubble);
+                popBubble(nearBubble, index);
+            });
+            
+            // 콤보 보너스 점수
+            const comboBonus = Math.pow(comboCount, 2) * 10;
+            addScore(comboBonus);
+        } else {
+            // 콤보 리셋
+            resetCombo();
+        }
+        
+        // 새 버블 생성
+        setTimeout(() => {
+            if (gameActive) {
+                replaceBubble(index);
+            }
+        }, 500);
+    });
+    
+    gameContainer.appendChild(bubble);
+}
+
+function findNearbySimilarBubbles(targetBubble) {
+    const bubbles = document.querySelectorAll('.bubble');
+    const targetRect = targetBubble.getBoundingClientRect();
+    const targetColor = targetBubble.dataset.color;
+    const nearbyBubbles = [];
+    
+    bubbles.forEach(bubble => {
+        if (bubble === targetBubble) return;
+        if (bubble.dataset.color !== targetColor) return;
+        
+        const rect = bubble.getBoundingClientRect();
+        const distance = Math.sqrt(
+            Math.pow(rect.left + rect.width/2 - targetRect.left - targetRect.width/2, 2) +
+            Math.pow(rect.top + rect.height/2 - targetRect.top - targetRect.height/2, 2)
+        );
+        
+        if (distance < 100) {
+            nearbyBubbles.push(bubble);
+        }
+    });
+    
+    return nearbyBubbles;
+}
+
+function addScore(points) {
+    score += points;
+    scoreDisplay.textContent = `점수: ${score}`;
+}
+
+function increaseCombo() {
+    // 기존 콤보 타이머 취소
+    if (comboTimer) {
+        clearTimeout(comboTimer);
+    }
+    
+    comboCount++;
+    comboMeter.textContent = `COMBO x${comboCount}`;
+    comboMeter.style.opacity = '1';
+    
+    // 콤보 타이머 설정
+    comboTimer = setTimeout(() => {
+        resetCombo();
+    }, 3000);
+}
+
+function resetCombo() {
+    comboCount = 0;
+    comboMeter.style.opacity = '0';
+    if (comboTimer) {
+        clearTimeout(comboTimer);
+        comboTimer = null;
+    }
+}
+
+function startTimer() {
+    if (gameTimer) {
+        clearInterval(gameTimer);
+    }
+    
+    gameTimer = setInterval(() => {
+        timeLeft -= 0.1;
+        timeLeft = Math.max(0, timeLeft);
+        timeDisplay.textContent = `시간: ${Math.ceil(timeLeft)}`;
+        
+        // 타이머 바 업데이트
+        const percentage = (timeLeft / difficultySettings[difficulty].timeLimit) * 100;
+        timerBar.style.width = `${percentage}%`;
+        
+        if (timeLeft <= 0) {
+            endGame();
+        }
+    }, 100);
+}
+
+function addTime(seconds) {
+    timeLeft += seconds;
+    timeLeft = Math.min(timeLeft, difficultySettings[difficulty].timeLimit);
+    timeDisplay.textContent = `시간: ${Math.ceil(timeLeft)}`;
+    
+    // 타이머 바 업데이트
+    const percentage = (timeLeft / difficultySettings[difficulty].timeLimit) * 100;
+    timerBar.style.width = `${percentage}%`;
+}
+
+function endGame() {
+    gameActive = false;
+    clearInterval(gameTimer);
+    
+    finalScoreDisplay.textContent = `최종 점수: ${score}`;
+    gameOverScreen.style.display = 'flex';
+    
+    // 최고 점수 업데이트
+    updateScores(score);
+}
+
+function updateScores(newScore) {
+    // 현재 점수가 최고 점수 목록에 들어갈 수 있는지 확인
+    if (newScore > highScores[highScores.length - 1].score) {
+        // 새 점수 추가
+        highScores.push({ rank: 0, score: newScore });
+        
+        // 점수별로 정렬
+        highScores.sort((a, b) => b.score - a.score);
+        
+        // 상위 5개만 유지
+        highScores = highScores.slice(0, 5);
+        
+        // 순위 업데이트
+        highScores.forEach((entry, index) => {
+            entry.rank = index + 1;
+        });
+        
+        // 로컬 스토리지에 저장 (선택 사항)
+        try {
+            localStorage.setItem('bubblePopHighScores', JSON.stringify(highScores));
+        } catch (e) {
+            console.log('로컬 스토리지에 접근할 수 없습니다.');
+        }
+    }
+}
+
+function updateHighScores() {
+    // 로컬 스토리지에서 점수 로드 (선택 사항)
+    try {
+        const storedScores = localStorage.getItem('bubblePopHighScores');
+        if (storedScores) {
+            highScores = JSON.parse(storedScores);
+        }
+    } catch (e) {
+        console.log('로컬 스토리지에 접근할 수 없습니다.');
+    }
+    
+    // 점수 표시 업데이트
+    const scoresList = document.getElementById('high-scores');
+    scoresList.innerHTML = '';
+    
+    highScores.forEach(entry => {
+        const scoreEntry = document.createElement('div');
+        scoreEntry.className = 'score-entry';
+        
+        const rank = document.createElement('div');
+        rank.className = 'rank';
+        rank.textContent = entry.rank;
+        
+        const score = document.createElement('div');
+        score.className = 'score';
+        score.textContent = entry.score;
+        
+        scoreEntry.appendChild(rank);
+        scoreEntry.appendChild(score);
+        scoresList.appendChild(scoreEntry);
+    });
+}
+
+// 화면 크기 조정 이벤트
+window.addEventListener('resize', () => {
+    if (gameActive) {
+        // 버블 위치 조정
+        const bubbles = document.querySelectorAll('.bubble');
+        const containerWidth = gameContainer.clientWidth;
+        const containerHeight = gameContainer.clientHeight;
+        
+        bubbles.forEach(bubble => {
+            const bubbleWidth = parseFloat(bubble.style.width);
+            const bubbleHeight = parseFloat(bubble.style.height);
+            
+            let x = parseFloat(bubble.style.left);
+            let y = parseFloat(bubble.style.top);
+            
+            x = Math.min(x, containerWidth - bubbleWidth);
+            y = Math.min(y, containerHeight - bubbleHeight);
+            
+            bubble.style.left = `${x}px`;
+            bubble.style.top = `${y}px`;
+        });
+    }
+});
+</script>
+</body>
+</html>
